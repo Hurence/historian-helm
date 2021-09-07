@@ -1,0 +1,9 @@
+dependencies:
+- name: solr
+  repository: https://charts.bitnami.com/bitnami
+  version: 2.0.4
+- name: grafana
+  repository: https://charts.bitnami.com/bitnami
+  version: 6.1.11
+digest: sha256:9db0968cc7dcc943eabbf7cbd53d0f84243b63d09cb815029c533ed763dd09b7
+generated: "2021-09-07T10:33:08.601843+02:00"

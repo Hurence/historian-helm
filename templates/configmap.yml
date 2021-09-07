@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+  namespace: default
+data:   
+  config.json: |
+    {
+        "web.verticles.instance.number": 2,
+        "historian.verticles.instance.number": 1,
+        "http_server" : {
+            "host": "0.0.0.0",
+            "port" : {{ .Values.service.port }},
+            "historian.address": "historian",
+            "api" : {
+                "grafana" : {
+                    "search" : {
+                    "default_size": 10
+                    },
+                    "annotations" : {
+                    "limit": 100
+                    }
+                }
+            }
+        },
+        "historian": {
+            "address" : "historian",
+            "solr" : {
+                "use_zookeeper": true,
+                "zookeeper_urls": ["historian-zookeeper:2181/solr"],
+                "stream_url": "http://historian-solr:8983/solr/historian",
+                "chunk_collection": "historian",
+                "annotation_collection": "annotation"
+            }
+        }
+    }    
