@@ -82,3 +82,7 @@ tolerations: []
 affinity: {}
 
 solr.authentication.enabled: no
+grafana:
+  admin:
+    password: historian
+grafana.admin.existingSecret: historian

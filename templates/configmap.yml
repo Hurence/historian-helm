@@ -27,10 +27,111 @@ data:
             "address" : "historian",
             "solr" : {
                 "use_zookeeper": true,
-                "zookeeper_urls": ["historian-zookeeper:2181/solr"],
-                "stream_url": "http://historian-solr:8983/solr/historian",
+                "zookeeper_urls": ["{{ .Release.Name }}-zookeeper:2181/solr"],
+                "stream_url": "http://${{ .Release.Name | snakecase | upper }}_SOLR_SERVICE_HOST:${{ .Release.Name | snakecase | upper }}_SOLR_SERVICE_PORT/solr/historian",
                 "chunk_collection": "historian",
                 "annotation_collection": "annotation"
             }
         }
-    }    
+    }
+  startup.sh: |
+    echo "step 0 : wait for solr to be up and running"
+
+    release_name={{ .Release.Name | snakecase | upper }}
+    solr_host_var_name=${release_name}_SOLR_SERVICE_HOST
+    solr_port_var_name=${release_name}_SOLR_SERVICE_PORT
+
+    solr_url="http://${!solr_host_var_name}:${!solr_port_var_name}"
+    max_attempts=12
+    wait_seconds=10
+
+    ((attempts_left=max_attempts))
+    while (( attempts_left > 0 )); do
+        if wget -q -O - "$solr_url/solr" | grep -i solr >/dev/null; then
+        break
+        fi
+        (( attempts_left-- ))
+        if (( attempts_left == 0 )); then
+        echo "Solr is still not running; giving up"
+        exit 1
+        fi
+        if (( attempts_left == 1 )); then
+        attempts=attempt
+        else
+        attempts=attempts
+        fi
+        echo "Solr is not running yet on $solr_url/solr. $attempts_left $attempts left"
+        sleep "$wait_seconds"
+    done
+    echo "Solr is running on $solr_url/solr"
+
+    if [[ `curl --location --request GET "${solr_url}/solr/admin/collections?action=LIST" | grep historian` ==  *"historian"* ]]; then 
+        echo "historian collection already present"
+    else
+        echo "-----------------------------------"
+        echo "step 1 : upload historian configset"
+        curl --location --request POST "${solr_url}/solr/admin/configs?action=UPLOAD&name=historian" \
+            --header 'Content-Type: application/zip' \
+            --data-binary '@/opt/historian/historian-configset.zip'
+
+        echo "-----------------------------------"
+        echo "step 2 : create the collection"
+        curl --location --request POST "${solr_url}/v2/c" \
+            --header 'Content-Type: application/json' \
+            --data-raw '{
+                "create": {
+                    "name": "historian",
+                    "config": "historian",
+                    "maxShardsPerNode": 6,
+                    "numShards": 3,
+                    "replicationFactor": 2
+                }
+            }'
+    fi
+
+    echo "-----------------------------------"
+    echo "setup grafana"
+    grafana_host_var_name=${release_name}_GRAFANA_SERVICE_HOST
+    grafana_pwd=historian
+    grafana_url="http://admin:${grafana_pwd}@${!grafana_host_var_name}:3000"
+
+    curl --location --request POST "${grafana_url}/api/orgs" \
+        --header 'Content-Type: application/json' \
+        --data-raw '{ "name": "hurence" }'
+
+    curl -X POST "${grafana_url}/api/user/using/2"
+
+    api_key_response=`curl --location --request POST "${grafana_url}/api/auth/keys" --header 'Content-Type: application/json' --data-raw '{ "name": "apikeycurl", "role": "Admin" }'`
+    api_key_prefix='{"id":1,"name":"apikeycurl","key":"'
+    api_key_suffix='"}'
+    api_key=${api_key_response#"$api_key_prefix"}
+    api_key=${api_key%"$api_key_suffix"}
+    
+    echo ${api_key}
+
+    curl --location --request POST "http://${!grafana_host_var_name}:3000/api/datasources" \
+        --header "Authorization: Bearer ${api_key}" \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+                "name": "historian",
+                "type": "prometheus",
+                "typeName": "Prometheus",
+                "access": "proxy",
+                "url": "http://{{ .Release.Name }}-historian-server:80",
+                "password": "",
+                "user": "",
+                "database": "",
+                "basicAuth": false,
+                "isDefault": false,
+                "jsonData": {
+                    "httpMethod": "POST"
+                },
+                "readOnly": false
+            }'
+
+    echo "-----------------------------------"
+    echo "starting historian server"
+    java -Dlog4j.configuration=file:/opt/historian/log4j.properties -jar /opt/historian/historian-server-1.3.8-fat.jar -conf /etc/config/config.json
+    
+
+

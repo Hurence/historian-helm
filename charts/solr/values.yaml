@@ -75,7 +75,7 @@ cloudEnabled: true
 cloudBootstrap: true
 ## @param collection Solr collection name
 ##
-collection: historian
+collection: my-collection
 ## @param collectionShards Number of collection shards
 ##
 collectionShards: 3
