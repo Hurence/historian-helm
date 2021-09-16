@@ -6,4 +6,4 @@ helm chart for kubernetes installation of data historian
 
 - add some data through api
 - fix /export issue in grafana
-
+- add compactor

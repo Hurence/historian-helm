@@ -51,6 +51,37 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Selector labels
+*/}}
+{{- define "historian.server.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "historian.server-name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+
+{{/*
+Selector labels
+*/}}
+{{- define "historian.scrapper.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "historian.scrapper-name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Define the name of the historian server
+*/}}
+{{- define "historian.server-name" -}}
+{{- printf "%s-%s" (include "historian-helm.fullname" .) "server" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Define the name of the historian scrapper
+*/}}
+{{- define "historian.scrapper-name" -}}
+{{- printf "%s-%s" (include "historian-helm.fullname" .) "scrapper" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "historian-helm.serviceAccountName" -}}

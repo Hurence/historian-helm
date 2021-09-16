@@ -28,7 +28,7 @@ data:
             "solr" : {
                 "use_zookeeper": true,
                 "zookeeper_urls": ["{{ .Release.Name }}-zookeeper:2181/solr"],
-                "stream_url": "http://${{ .Release.Name | snakecase | upper }}_SOLR_SERVICE_HOST:${{ .Release.Name | snakecase | upper }}_SOLR_SERVICE_PORT/solr/historian",
+                "stream_url": "http://{{ .Release.Name }}-solr:8983/solr/historian",
                 "chunk_collection": "historian",
                 "annotation_collection": "annotation"
             }

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: historian-server
+name: historian
 description: A Helm chart for deploying Hurence Historian into Kubernetes
 type: application
 version: 0.1.0

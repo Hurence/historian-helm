@@ -589,7 +589,7 @@ externalZookeeper:
 exporter:
   ## @param exporter.enabled Start a side-car prometheus exporter
   ##
-  enabled: false
+  enabled: true
   ## Configure extra options for liveness probe
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
   ## @param exporter.livenessProbe.enabled Enable livenessProbe
