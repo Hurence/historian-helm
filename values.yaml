@@ -40,6 +40,19 @@ service:
   type: ClusterIP
   port: 80
 
+
+compactor:
+  # do we compact chunks ?
+  enabled: true
+
+scrapper:
+  # do we scrappe prometheus metrics from solr exporter ?
+  enabled: true
+  # size of solr chunk to be sent
+  batchSize: 500
+  # scrapping delay interval in ms
+  delay: 10000
+
 ingress:
   enabled: false
   className: ""

@@ -51,7 +51,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Selector labels
+Selector labels for server
 */}}
 {{- define "historian.server.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "historian.server-name" . }}
@@ -60,10 +60,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 
 {{/*
-Selector labels
+Selector labels for scrapper
 */}}
 {{- define "historian.scrapper.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "historian.scrapper-name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Selector labels for compactor
+*/}}
+{{- define "historian.compactor.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "historian.compactor-name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
@@ -79,6 +87,13 @@ Define the name of the historian scrapper
 */}}
 {{- define "historian.scrapper-name" -}}
 {{- printf "%s-%s" (include "historian-helm.fullname" .) "scrapper" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Define the name of the historian compactor
+*/}}
+{{- define "historian.compactor-name" -}}
+{{- printf "%s-%s" (include "historian-helm.fullname" .) "compactor" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
