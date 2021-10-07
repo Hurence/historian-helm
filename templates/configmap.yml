@@ -95,13 +95,37 @@ data:
     grafana_pwd=historian
     grafana_url="http://admin:${grafana_pwd}@${!grafana_host_var_name}:3000"
 
-    curl --location --request POST "${grafana_url}/api/orgs" \
+    ((attempts_left=max_attempts))
+    while (( attempts_left > 0 )); do
+        if curl -Is "${grafana_url}/api/search" | head -n 1 | grep 200 > /dev/null; then
+            break
+        fi
+        (( attempts_left-- ))
+        if (( attempts_left == 0 )); then
+            echo "Grafana is still not running; giving up"
+            exit 1
+        fi
+        if (( attempts_left == 1 )); then
+            attempts=attempt
+        else
+            attempts=attempts
+        fi
+        echo "Grafana is not running yet on $grafana_url. $attempts_left $attempts left"
+        sleep "$wait_seconds"
+    done
+    echo "Grafana running on $grafana_url"
+
+
+    echo "creating hurence organisation"
+    curl --location -s --request POST "${grafana_url}/api/orgs" \
         --header 'Content-Type: application/json' \
         --data-raw '{ "name": "hurence" }'
 
-    curl -X POST "${grafana_url}/api/user/using/2"
+    echo "creating one user"
+    curl -s -X POST "${grafana_url}/api/user/using/2"
 
-    api_key_response=`curl --location --request POST "${grafana_url}/api/auth/keys" --header 'Content-Type: application/json' --data-raw '{ "name": "apikeycurl", "role": "Admin" }'`
+    echo "getting api key"
+    api_key_response=`curl -s --location --request POST "${grafana_url}/api/auth/keys" --header 'Content-Type: application/json' --data-raw '{ "name": "apikeycurl", "role": "Admin" }'`
     api_key_prefix='{"id":1,"name":"apikeycurl","key":"'
     api_key_suffix='"}'
     api_key=${api_key_response#"$api_key_prefix"}
@@ -109,7 +133,8 @@ data:
     
     echo ${api_key}
 
-    curl --location --request POST "http://${!grafana_host_var_name}:3000/api/datasources" \
+    echo "creating datasource"
+    curl -s --location --request POST "http://${!grafana_host_var_name}:3000/api/datasources" \
         --header "Authorization: Bearer ${api_key}" \
         --header 'Content-Type: application/json' \
         --data-raw '{
@@ -157,12 +182,10 @@ data:
 
         reader:
             queryFilters: "chunk_origin:prometheus-scrapper"
-            tagNames: "name"
 
         chunkyfier:
             saxAlphabetSize: 7
             saxStringLength: 24
-            groupByCols: "chunk_key"
             origin: "compactor"
             dateBucketFormat: "yyyy-MM-dd.HH"
 
