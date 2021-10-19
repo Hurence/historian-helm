@@ -142,7 +142,7 @@ data:
                 "type": "prometheus",
                 "typeName": "Prometheus",
                 "access": "proxy",
-                "url": "http://{{ .Release.Name }}-historian-server:80",
+                "url": "http://{{ .Release.Name }}-server:80",
                 "password": "",
                 "user": "",
                 "database": "",
