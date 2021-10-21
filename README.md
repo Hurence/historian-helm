@@ -1,9 +1,6 @@
 # historian-helm
 helm chart for kubernetes installation of data historian
 
-## TODO
+just run
 
-
-- add some data through api
-- fix /export issue in grafana
-- add compactor
+    helm install historian-demo .

@@ -45,7 +45,7 @@ compactor:
   # do we compact chunks ?
   enabled: true
 
-scrapper:
+scraper:
   # do we scrappe prometheus metrics from solr exporter ?
   enabled: true
   # size of solr chunk to be sent

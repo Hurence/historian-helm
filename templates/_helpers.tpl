@@ -60,10 +60,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 
 {{/*
-Selector labels for scrapper
+Selector labels for scraper
 */}}
-{{- define "historian.scrapper.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "historian.scrapper-name" . }}
+{{- define "historian.scraper.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "historian.scraper-name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
@@ -83,10 +83,10 @@ Define the name of the historian server
 {{- end -}}
 
 {{/*
-Define the name of the historian scrapper
+Define the name of the historian scraper
 */}}
-{{- define "historian.scrapper-name" -}}
-{{- printf "%s-%s" (include "historian-helm.fullname" .) "scrapper" | trunc 63 | trimSuffix "-" -}}
+{{- define "historian.scraper-name" -}}
+{{- printf "%s-%s" (include "historian-helm.fullname" .) "scraper" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*

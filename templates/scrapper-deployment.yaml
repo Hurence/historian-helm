@@ -1,8 +1,8 @@
-{{- if .Values.scrapper.enabled -}}
+{{- if .Values.scraper.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "historian.scrapper-name" . }}
+  name: {{ include "historian.scraper-name" . }}
   labels:
     {{- include "historian-helm.labels" . | nindent 4 }}
 spec:
@@ -11,7 +11,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "historian.scrapper.selectorLabels" . | nindent 6 }}
+      {{- include "historian.scraper.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,7 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "historian.scrapper.selectorLabels" . | nindent 8 }}
+        {{- include "historian.scraper.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -30,19 +30,19 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
 
       containers:
-        - name: historian-scrapper
-          image: hurence/historian-scrapper
+        - name: historian-scraper
+          image: hurence/historian-scraper
           env:
-          - name: SCRAPPER_URL
+          - name: SCRAPER_URL
             value: http://{{ .Release.Name }}-solr-exporter:9983
           - name: ZK_HOSTS
             value: {{ .Release.Name }}-zookeeper:2181
           - name: ZK_CHROOT
             value: "/solr"
           - name: BATCH_SIZE
-            value: "{{ .Values.scrapper.batchSize }}"
+            value: "{{ .Values.scraper.batchSize }}"
           - name: SCRAPER_DELAY
-            value: "{{ .Values.scrapper.delay }}"
+            value: "{{ .Values.scraper.delay }}"
 
       restartPolicy: Always
 
