@@ -50,7 +50,7 @@ compactor:
     tag: "1.3.9"
   replicaCount: 1
   reader:
-    queryFilters: "chunk_origin:prometheus-scraper OR chunk_origin:ingestion-csv"
+    queryFilters: "(chunk_origin:prometheus-scraper OR chunk_origin:ingestion-csv)"
 
 scraper:
   # do we scrappe prometheus metrics from solr exporter ?
