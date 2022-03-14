@@ -7,7 +7,7 @@ metadata:
     {{- include "historian-helm.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.compactor.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -31,7 +31,8 @@ spec:
 
       containers:
         - name: historian-compactor
-          image: hurence/historian-spark:latest
+          image: "{{ .Values.compactor.image.repository }}:{{ .Values.compactor.image.tag }}"
+          imagePullPolicy: "{{ .Values.compactor.image.pullPolicy }}"
           command: ["bin/historian-compactor.sh", "start", "-c", "/etc/config/compactor-config.yml", "-s", "/opt/spark",]
           volumeMounts:
           - name: config-volume

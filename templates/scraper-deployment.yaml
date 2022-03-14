@@ -7,7 +7,7 @@ metadata:
     {{- include "historian-helm.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.scraper.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -31,7 +31,8 @@ spec:
 
       containers:
         - name: historian-scraper
-          image: hurence/historian-scraper
+          image: "{{ .Values.scraper.image.repository }}:{{ .Values.scraper.image.tag }}"
+          imagePullPolicy: "{{ .Values.scraper.image.pullPolicy }}"
           env:
           - name: SCRAPER_URL
             value: http://{{ .Release.Name }}-solr-exporter:9983

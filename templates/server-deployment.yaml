@@ -30,7 +30,8 @@ spec:
 
       containers:
         - name: historian-server
-          image: hurence/historian-server:latest
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           command: [ "/bin/bash", "-c", "chmod u+x /etc/config/startup.sh; . /etc/config/startup.sh" ]
           volumeMounts:
           - name: config-volume

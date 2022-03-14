@@ -7,8 +7,9 @@ replicaCount: 1
 image:
   repository: hurence/historian-server
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "1.3.8"
+  # WARNING: do not put latest as for the moment the startup script in configmap uses
+  # this value to find the jar file to launch
+  tag: "1.3.9"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -40,10 +41,14 @@ service:
   type: ClusterIP
   port: 80
 
-
 compactor:
   # do we compact chunks ?
   enabled: true
+  image:
+    repository: hurence/historian-spark
+    pullPolicy: IfNotPresent
+    tag: "1.3.9"
+  replicaCount: 1
 
 scraper:
   # do we scrappe prometheus metrics from solr exporter ?
@@ -52,6 +57,11 @@ scraper:
   batchSize: 500
   # scrapping delay interval in ms
   delay: 10000
+  image:
+    repository: hurence/historian-scraper
+    pullPolicy: IfNotPresent
+    tag: "1.3.9"
+  replicaCount: 1
 
 ingress:
   enabled: false
@@ -97,5 +107,6 @@ affinity: {}
 solr.authentication.enabled: no
 grafana:
   admin:
+    user: admin
     password: historian
 grafana.admin.existingSecret: historian
