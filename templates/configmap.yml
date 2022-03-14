@@ -181,7 +181,7 @@ data:
             flushInterval: 2000
 
         reader:
-            queryFilters: "chunk_origin:prometheus-scraper"
+            queryFilters: "{{ .Values.compactor.reader.queryFilters }}"
 
         chunkyfier:
             saxAlphabetSize: 7
