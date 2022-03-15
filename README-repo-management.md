@@ -5,6 +5,7 @@ Has been done thanks to this [tutorial](https://medium.com/@mattiaperi/create-a-
 Regenerate the package then update the index:
 
 ```shell
+helm lint
 helm package .
 helm repo index --url https://hurence.github.io/historian-helm/ .
 ```
