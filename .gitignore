@@ -1,0 +1,43 @@
+# IntelliJ
+*.iml
+**/.idea/*
+
+
+# Eclipse
+**/.project
+**/.settings
+**/.classpath
+#   pydev projects
+**/.pydevproject
+
+# Python/Jython compiled files
+**/*.pyc
+**/*$py.class
+
+# Maven
+**/target/*
+**/dependency-reduced-pom.xml
+
+# File copy 
+**/*.*~
+
+# PlantUml files
+**/*.plantuml
+
+# Misc
+*.tar.gz
+**/_build/
+*.DS_Store
+*.versionsBackup
+checkpoints/
+logs/
+**/node_modules/*
+**/app/jspm_packages/*
+
+**/log/
+**/chronix/data/
+
+.java-version
+
+
+*.factorypath
