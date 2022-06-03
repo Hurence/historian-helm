@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-configmap
-data:   
+data:
   config.json: |
     {
         "web.verticles.instance.number": 2,
@@ -33,6 +33,24 @@ data:
             }
         }
     }
+
+  log4j.properties: |
+    # This sets the global logging level and specifies the appenders
+    log4j.rootLogger=INFO, theConsoleAppender, rollingFile
+
+    # settings for the console appender
+    log4j.appender.theConsoleAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.theConsoleAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.theConsoleAppender.layout.ConversionPattern=%-4r [%t] %-5p %l - %m%n
+
+    log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
+    log4j.appender.rollingFile.File=application.log
+    log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+    log4j.appender.rollingFile.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n
+    log4j.appender.rollingFile.MaxFileSize=10MB
+    log4j.appender.rollingFile.MaxBackupIndex=5
+    log4j.appender.rollingFile.append=true
+
   startup.sh: |
     echo "step 0 : wait for solr to be up and running"
 
@@ -156,7 +174,7 @@ data:
 
     echo "-----------------------------------"
     echo "starting historian server"
-    java -Dlog4j.configuration=file:/opt/historian/log4j.properties -jar /opt/historian/historian-server-{{ .Values.image.tag }}-fat.jar -conf /etc/config/config.json
+    java -Dlog4j.configuration=file:/etc/config/log4j.properties -jar /opt/historian/historian-server-{{ .Values.image.tag }}-fat.jar -conf /etc/config/config.json
 
   compactor-config.yml: |
     conf:
