@@ -3,53 +3,9 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-configmap
 data:
-  config.json: |
-    {
-        "web.verticles.instance.number": 2,
-        "historian.verticles.instance.number": 1,
-        "http_server" : {
-            "host": "0.0.0.0",
-            "port" : {{ .Values.service.port }},
-            "historian.address": "historian",
-            "api" : {
-                "grafana" : {
-                    "search" : {
-                    "default_size": 10
-                    },
-                    "annotations" : {
-                    "limit": 100
-                    }
-                }
-            }
-        },
-        "historian": {
-            "address" : "historian",
-            "solr" : {
-                "use_zookeeper": true,
-                "zookeeper_urls": ["{{ .Release.Name }}-zookeeper:2181/solr"],
-                "stream_url": "http://{{ .Release.Name }}-solr:8983/solr/historian",
-                "chunk_collection": "historian",
-                "annotation_collection": "annotation"
-            }
-        }
-    }
+  config.json: { { .Values.configuration.config.json } }
 
-  log4j.properties: |
-    # This sets the global logging level and specifies the appenders
-    log4j.rootLogger=INFO, theConsoleAppender, rollingFile
-
-    # settings for the console appender
-    log4j.appender.theConsoleAppender=org.apache.log4j.ConsoleAppender
-    log4j.appender.theConsoleAppender.layout=org.apache.log4j.PatternLayout
-    log4j.appender.theConsoleAppender.layout.ConversionPattern=%-4r [%t] %-5p %l - %m%n
-
-    log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
-    log4j.appender.rollingFile.File=application.log
-    log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
-    log4j.appender.rollingFile.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n
-    log4j.appender.rollingFile.MaxFileSize=10MB
-    log4j.appender.rollingFile.MaxBackupIndex=5
-    log4j.appender.rollingFile.append=true
+  log4j.properties: { { .Values.configuration.log4j.properties } }
 
   startup.sh: |
     echo "step 0 : wait for solr to be up and running"
