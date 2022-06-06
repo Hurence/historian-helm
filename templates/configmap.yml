@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-configmap
 data:
-  {{- range $key, $value := .Values.configuration }}
-  {{- $_ := set $ "configMapKey" $key }}
-  {{- $_ := set $ "configMapValue" $value }}
-  {{ include "historian-helm.configMap.content" $ | indent 2 }}
-  {{- end }}
+{{- range $key, $value := .Values.configuration }}
+{{- $_ := set $ "configMapKey" $key }}
+{{- $_ := set $ "configMapValue" $value }}
+{{ include "historian-helm.configMap.content" $ | indent 2 }}
+{{- end }}
