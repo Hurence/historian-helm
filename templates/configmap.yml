@@ -3,45 +3,8 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-configmap
 data:
-  config.json: { { .Values.configuration.config.json } }
-
-  log4j.properties: { { .Values.configuration.log4j.properties } }
-
-  startup.sh: { { .Values.configuration.startup.sh } }
-
-  compactor-config.yml: |
-    conf:
-        spark:
-            master: "local[*]"
-            appName: "historian-compactor"
-            streamingEnabled: false
-            deployMode: ""
-            driverMemory: "1g"
-            driverCores: 1
-            numExecutors: 5
-            executorMemory: "1g"
-            executorCores: 1
-            sqlShufflePartitions: 10
-            checkpointDir: "checkpoints/historian-compactor"
-
-        solr:
-            zkHosts: "{{ .Release.Name }}-zookeeper:2181/solr"
-            collectionName: "historian"
-            batchSize: 2000
-            numConcurrentRequests: 2
-            flushInterval: 2000
-
-        reader:
-            queryFilters: "{{ .Values.compactor.reader.queryFilters }}"
-
-        chunkyfier:
-            saxAlphabetSize: 7
-            saxStringLength: 24
-            origin: "compactor"
-            dateBucketFormat: "yyyy-MM-dd.HH"
-
-        scheduler:
-            period: 10
-            startNow: true
-
-
+  {{- range $key, $value := .Values.configuration }}
+  {{- $_ := set $ "configMapKey" $key }}
+  {{- $_ := set $ "configMapValue" $value }}
+  {{ include "historian-helm.configMap.content" $ | indent 2 }}
+  {{- end }}

@@ -142,6 +142,7 @@ configuration:
             }
         }
     }
+
   log4j.properties: |
     # This sets the global logging level and specifies the appenders
     log4j.rootLogger=INFO, theConsoleAppender, rollingFile
@@ -283,3 +284,38 @@ configuration:
     echo "-----------------------------------"
     echo "starting historian server"
     java -Dlog4j.configuration=file:/etc/config/log4j.properties -jar /opt/historian/historian-server-{{ .Values.image.tag }}-fat.jar -conf /etc/config/config.json
+
+  compactor-config.yml: |
+    conf:
+        spark:
+            master: "local[*]"
+            appName: "historian-compactor"
+            streamingEnabled: false
+            deployMode: ""
+            driverMemory: "1g"
+            driverCores: 1
+            numExecutors: 5
+            executorMemory: "1g"
+            executorCores: 1
+            sqlShufflePartitions: 10
+            checkpointDir: "checkpoints/historian-compactor"
+
+        solr:
+            zkHosts: "{{ .Release.Name }}-zookeeper:2181/solr"
+            collectionName: "historian"
+            batchSize: 2000
+            numConcurrentRequests: 2
+            flushInterval: 2000
+
+        reader:
+            queryFilters: "{{ .Values.compactor.reader.queryFilters }}"
+
+        chunkyfier:
+            saxAlphabetSize: 7
+            saxStringLength: 24
+            origin: "compactor"
+            dateBucketFormat: "yyyy-MM-dd.HH"
+
+        scheduler:
+            period: 10
+            startNow: true
