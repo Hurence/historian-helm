@@ -106,3 +106,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Generate key-value content for config maps
+*/}}
+{{- define "historian-helm.configMap.content" -}}
+{{ $.configMapKey }}: {{ toYaml (tpl $.configMapValue $) }}
+{{- end }}

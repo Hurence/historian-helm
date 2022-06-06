@@ -110,3 +110,212 @@ grafana:
     password: historian
   ingress:
     enabled: false
+
+configuration:
+  config.json: |
+    {
+        "web.verticles.instance.number": 2,
+        "historian.verticles.instance.number": 1,
+        "http_server" : {
+            "host": "0.0.0.0",
+            "port" : {{ .Values.service.port }},
+            "historian.address": "historian",
+            "api" : {
+                "grafana" : {
+                    "search" : {
+                    "default_size": 10
+                    },
+                    "annotations" : {
+                    "limit": 100
+                    }
+                }
+            }
+        },
+        "historian": {
+            "address" : "historian",
+            "solr" : {
+                "use_zookeeper": true,
+                "zookeeper_urls": ["{{ .Release.Name }}-zookeeper:2181/solr"],
+                "stream_url": "http://{{ .Release.Name }}-solr:8983/solr/historian",
+                "chunk_collection": "historian",
+                "annotation_collection": "annotation"
+            }
+        }
+    }
+
+  log4j.properties: |
+    # This sets the global logging level and specifies the appenders
+    log4j.rootLogger=INFO, theConsoleAppender, rollingFile
+
+    # settings for the console appender
+    log4j.appender.theConsoleAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.theConsoleAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.theConsoleAppender.layout.ConversionPattern=%-4r [%t] %-5p %l - %m%n
+
+    log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
+    log4j.appender.rollingFile.File=application.log
+    log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+    log4j.appender.rollingFile.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n
+    log4j.appender.rollingFile.MaxFileSize=10MB
+    log4j.appender.rollingFile.MaxBackupIndex=5
+    log4j.appender.rollingFile.append=true
+
+  startup.sh: |
+    echo "step 0 : wait for solr to be up and running"
+
+    release_name={{ .Release.Name | snakecase | upper }}
+    solr_host_var_name=${release_name}_SOLR_SERVICE_HOST
+    solr_port_var_name=${release_name}_SOLR_SERVICE_PORT
+
+    solr_url="http://${!solr_host_var_name}:${!solr_port_var_name}"
+    max_attempts=12
+    wait_seconds=10
+
+    ((attempts_left=max_attempts))
+    while (( attempts_left > 0 )); do
+        if wget -q -O - "$solr_url/solr" | grep -i solr >/dev/null; then
+        break
+        fi
+        (( attempts_left-- ))
+        if (( attempts_left == 0 )); then
+        echo "Solr is still not running; giving up"
+        exit 1
+        fi
+        if (( attempts_left == 1 )); then
+        attempts=attempt
+        else
+        attempts=attempts
+        fi
+        echo "Solr is not running yet on $solr_url/solr. $attempts_left $attempts left"
+        sleep "$wait_seconds"
+    done
+    echo "Solr is running on $solr_url/solr"
+
+    if [[ `curl --location --request GET "${solr_url}/solr/admin/collections?action=LIST" | grep historian` ==  *"historian"* ]]; then
+        echo "historian collection already present"
+    else
+        echo "-----------------------------------"
+        echo "step 1 : upload historian configset"
+        curl --location --request POST "${solr_url}/solr/admin/configs?action=UPLOAD&name=historian" \
+            --header 'Content-Type: application/zip' \
+            --data-binary '@/opt/historian/historian-configset.zip'
+
+        echo "-----------------------------------"
+        echo "step 2 : create the collection"
+        curl --location --request POST "${solr_url}/v2/c" \
+            --header 'Content-Type: application/json' \
+            --data-raw '{
+                "create": {
+                    "name": "historian",
+                    "config": "historian",
+                    "maxShardsPerNode": 6,
+                    "numShards": 3,
+                    "replicationFactor": 2
+                }
+            }'
+    fi
+
+    echo "-----------------------------------"
+    echo "setup grafana"
+    grafana_host_var_name=${release_name}_GRAFANA_SERVICE_HOST
+    grafana_admin={{ .Values.grafana.admin.user }}
+    grafana_pwd={{ .Values.grafana.admin.password }}
+    grafana_url="http://${grafana_admin}:${grafana_pwd}@${!grafana_host_var_name}:3000"
+
+    ((attempts_left=max_attempts))
+    while (( attempts_left > 0 )); do
+        if curl -Is "${grafana_url}/api/search" | head -n 1 | grep 200 > /dev/null; then
+            break
+        fi
+        (( attempts_left-- ))
+        if (( attempts_left == 0 )); then
+            echo "Grafana is still not running; giving up"
+            exit 1
+        fi
+        if (( attempts_left == 1 )); then
+            attempts=attempt
+        else
+            attempts=attempts
+        fi
+        echo "Grafana is not running yet on $grafana_url. $attempts_left $attempts left"
+        sleep "$wait_seconds"
+    done
+    echo "Grafana running on $grafana_url"
+
+
+    echo "creating hurence organisation"
+    curl --location -s --request POST "${grafana_url}/api/orgs" \
+        --header 'Content-Type: application/json' \
+        --data-raw '{ "name": "hurence" }'
+
+    echo "creating one user"
+    curl -s -X POST "${grafana_url}/api/user/using/2"
+
+    echo "getting api key"
+    api_key_response=`curl -s --location --request POST "${grafana_url}/api/auth/keys" --header 'Content-Type: application/json' --data-raw '{ "name": "apikeycurl", "role": "Admin" }'`
+    api_key_prefix='{"id":1,"name":"apikeycurl","key":"'
+    api_key_suffix='"}'
+    api_key=${api_key_response#"$api_key_prefix"}
+    api_key=${api_key%"$api_key_suffix"}
+
+    echo ${api_key}
+
+    echo "creating datasource"
+    curl -s --location --request POST "http://${!grafana_host_var_name}:3000/api/datasources" \
+        --header "Authorization: Bearer ${api_key}" \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+                "name": "historian",
+                "type": "prometheus",
+                "typeName": "Prometheus",
+                "access": "proxy",
+                "url": "http://{{ .Release.Name }}-server:80",
+                "password": "",
+                "user": "",
+                "database": "",
+                "basicAuth": false,
+                "isDefault": false,
+                "jsonData": {
+                    "httpMethod": "POST"
+                },
+                "readOnly": false
+            }'
+
+    echo "-----------------------------------"
+    echo "starting historian server"
+    java -Dlog4j.configuration=file:/etc/config/log4j.properties -jar /opt/historian/historian-server-{{ .Values.image.tag }}-fat.jar -conf /etc/config/config.json
+
+  compactor-config.yml: |
+    conf:
+        spark:
+            master: "local[*]"
+            appName: "historian-compactor"
+            streamingEnabled: false
+            deployMode: ""
+            driverMemory: "1g"
+            driverCores: 1
+            numExecutors: 5
+            executorMemory: "1g"
+            executorCores: 1
+            sqlShufflePartitions: 10
+            checkpointDir: "checkpoints/historian-compactor"
+
+        solr:
+            zkHosts: "{{ .Release.Name }}-zookeeper:2181/solr"
+            collectionName: "historian"
+            batchSize: 2000
+            numConcurrentRequests: 2
+            flushInterval: 2000
+
+        reader:
+            queryFilters: "{{ .Values.compactor.reader.queryFilters }}"
+
+        chunkyfier:
+            saxAlphabetSize: 7
+            saxStringLength: 24
+            origin: "compactor"
+            dateBucketFormat: "yyyy-MM-dd.HH"
+
+        scheduler:
+            period: 10
+            startNow: true
